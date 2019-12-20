@@ -17,42 +17,49 @@ import io.prometheus.client.spring.boot.EnablePrometheusEndpoint;
 @SpringBootApplication
 @EnablePrometheusEndpoint
 public class InstrumentApplication {
-	
-	private JobQueue queue = new JobQueue();
-	
-	private WorkerManager workerManager;
 
-	public static void main(String[] args) {
+    private JobQueue queue = new JobQueue();
 
-		SpringApplication.run(InstrumentApplication.class, args);
-	}
+    private WorkerManager workerManager;
 
-	@RequestMapping(value = "/hello-world")
-	public @ResponseBody String sayHello() {
-		return "hello, world";
-	}
-	
-	@RequestMapping(value = "/jobs", method = RequestMethod.POST) 
-	public @ResponseBody String jobs() {
-		queue.push(new Job());
-		return "ok";
-	}
-	
-	@Bean
-	public TaskExecutor taskExecutor() {
-		return new SimpleAsyncTaskExecutor();
-	}
+    public static void main(String[] args) {
 
-	@Bean
-	public CommandLineRunner schedulingRunner(TaskExecutor executor) {
-		return new CommandLineRunner() {
+        SpringApplication.run(InstrumentApplication.class, args);
+    }
+
+    @RequestMapping(value = "/hello-world")
+    public @ResponseBody
+    String sayHello() {
+        return "hello, world";
+    }
+
+	/**
+	 * 为工作队列添加工作
+	 * @return
+	 */
+	@RequestMapping(value = "/jobs", method = RequestMethod.POST)
+    public @ResponseBody
+    String jobs() {
+        queue.push(new Job());
+        return "ok";
+    }
+
+    @Bean
+    public TaskExecutor taskExecutor() {
+        return new SimpleAsyncTaskExecutor();
+    }
+
+    @Bean
+    public CommandLineRunner schedulingRunner(TaskExecutor executor) {
+        return new CommandLineRunner() {
+            @Override
 			public void run(String... args) throws Exception {
-				// 10 jobs per worker
-				workerManager = new WorkerManager(queue, 1, 4, 10);
-				executor.execute(workerManager);
-				System.out.println("WorkerManager thread started...");
-			}
-		};
-	}
+                // 10 jobs per worker
+                workerManager = new WorkerManager(queue, 1, 4, 10);
+                executor.execute(workerManager);
+                System.out.println("WorkerManager thread started...");
+            }
+        };
+    }
 
 }
